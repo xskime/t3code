@@ -13,6 +13,7 @@ import {
   resolveProjectExpanded,
   setDefaultAdvertisedEndpointKey,
   setProjectExpanded,
+  setSidebarEnvironmentTab,
   setThreadChangedFilesExpanded,
   type UiState,
 } from "./uiStateStore";
@@ -21,6 +22,7 @@ function makeUiState(overrides: Partial<UiState> = {}): UiState {
   return {
     projectExpandedById: {},
     projectOrder: [],
+    sidebarEnvironmentTab: "local",
     threadLastVisitedAtById: {},
     threadChangedFilesExpandedById: {},
     defaultAdvertisedEndpointKey: null,
@@ -140,6 +142,15 @@ describe("uiStateStore pure functions", () => {
       defaultAdvertisedEndpointKey: null,
     });
   });
+
+  it("switches the sidebar environment tab without churning unchanged state", () => {
+    const initial = makeUiState();
+    const next = setSidebarEnvironmentTab(initial, "remote");
+
+    expect(next.sidebarEnvironmentTab).toBe("remote");
+    expect(setSidebarEnvironmentTab(next, "remote")).toBe(next);
+    expect(setSidebarEnvironmentTab(next, "local").sidebarEnvironmentTab).toBe("local");
+  });
 });
 
 describe("parsePersistedState", () => {
@@ -168,6 +179,7 @@ describe("parsePersistedState", () => {
         logical: false,
       },
       projectOrder: ["physical-b", "physical-a"],
+      sidebarEnvironmentTab: "local",
       threadLastVisitedAtById: {
         "environment:thread-1": "2026-02-25T12:35:00.000Z",
       },
@@ -178,6 +190,16 @@ describe("parsePersistedState", () => {
         },
       },
     });
+  });
+
+  it("hydrates the sidebar environment tab and falls back to local on invalid values", () => {
+    expect(parsePersistedState({ sidebarEnvironmentTab: "remote" }).sidebarEnvironmentTab).toBe(
+      "remote",
+    );
+    expect(parsePersistedState({ sidebarEnvironmentTab: "bogus" }).sidebarEnvironmentTab).toBe(
+      "local",
+    );
+    expect(parsePersistedState({}).sidebarEnvironmentTab).toBe("local");
   });
 
   it("migrates legacy CWD project preferences into local alias keys", () => {
@@ -262,6 +284,7 @@ describe("uiStateStore persistence", () => {
         },
       },
       defaultAdvertisedEndpointKey: "desktop-core:lan:http",
+      sidebarEnvironmentTab: "remote",
     });
 
     persistState(state);
@@ -274,6 +297,7 @@ describe("uiStateStore persistence", () => {
         logical: false,
       },
       projectOrder: ["physical-b", "physical-a"],
+      sidebarEnvironmentTab: "remote",
       threadLastVisitedAtById: {
         "environment:thread-1": "2026-02-25T12:35:00.000Z",
       },

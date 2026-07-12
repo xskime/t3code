@@ -44,6 +44,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   type ContextMenuItem,
   DEFAULT_SERVER_SETTINGS,
+  type EnvironmentId,
   ProjectId,
   type ScopedThreadRef,
   type ResolvedKeybindingsConfig,
@@ -95,6 +96,7 @@ import { previewEnvironment } from "../state/preview";
 import {
   legacyProjectCwdPreferenceKey,
   resolveProjectExpanded,
+  type SidebarEnvironmentTab,
   useUiStateStore,
 } from "../uiStateStore";
 import {
@@ -138,6 +140,7 @@ import {
 } from "./desktopUpdate.logic";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
+import { Toggle, ToggleGroup } from "./ui/toggle-group";
 import {
   Dialog,
   DialogDescription,
@@ -2867,6 +2870,10 @@ interface SidebarProjectsContentProps {
   suppressProjectClickForContextMenuRef: React.RefObject<boolean>;
   attachProjectListAutoAnimateRef: (node: HTMLElement | null) => void;
   projectsLength: number;
+  showEnvironmentTabs: boolean;
+  environmentTab: SidebarEnvironmentTab;
+  onEnvironmentTabChange: (tab: SidebarEnvironmentTab) => void;
+  environmentTabAttention: { local: boolean; remote: boolean };
 }
 
 const SidebarProjectsContent = memo(function SidebarProjectsContent(
@@ -2908,6 +2915,10 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
     suppressProjectClickForContextMenuRef,
     attachProjectListAutoAnimateRef,
     projectsLength,
+    showEnvironmentTabs,
+    environmentTab,
+    onEnvironmentTabChange,
+    environmentTabAttention,
   } = props;
 
   const handleProjectSortOrderChange = useCallback(
@@ -2960,6 +2971,35 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>
+      {showEnvironmentTabs ? (
+        <SidebarGroup className="px-2 pt-0 pb-1">
+          <ToggleGroup
+            variant="outline"
+            size="xs"
+            className="w-full"
+            value={[environmentTab]}
+            onValueChange={(value) => {
+              const next = value[0];
+              if (next === "local" || next === "remote") {
+                onEnvironmentTabChange(next);
+              }
+            }}
+          >
+            <Toggle aria-label="Local projects" value="local" className="flex-1 gap-1.5">
+              Local
+              {environmentTab !== "local" && environmentTabAttention.local ? (
+                <span className="size-1.5 rounded-full bg-primary" />
+              ) : null}
+            </Toggle>
+            <Toggle aria-label="Remote projects" value="remote" className="flex-1 gap-1.5">
+              Remote
+              {environmentTab !== "remote" && environmentTabAttention.remote ? (
+                <span className="size-1.5 rounded-full bg-primary" />
+              ) : null}
+            </Toggle>
+          </ToggleGroup>
+        </SidebarGroup>
+      ) : null}
       {showArm64IntelBuildWarning && arm64IntelBuildWarningDescription ? (
         <SidebarGroup className="px-2 pt-2 pb-0">
           <Alert variant="warning" className="rounded-2xl border-warning/40 bg-warning/8">
@@ -3094,7 +3134,9 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
 
         {projectsLength === 0 && (
           <div className="px-2 pt-4 text-center text-xs text-muted-foreground/60">
-            No projects yet
+            {showEnvironmentTabs && environmentTab === "remote"
+              ? "No remote projects yet"
+              : "No projects yet"}
           </div>
         )}
       </SidebarGroup>
@@ -3162,6 +3204,26 @@ export default function Sidebar() {
       ),
     [environments],
   );
+  const sidebarEnvironmentTab = useUiStateStore((store) => store.sidebarEnvironmentTab);
+  const setSidebarEnvironmentTab = useUiStateStore((store) => store.setSidebarEnvironmentTab);
+  // Primary and desktop-local (e.g. WSL) environments count as "local"; every
+  // other connected environment is shown under the "Remote" sidebar tab.
+  const isLocalEnvironmentId = useCallback(
+    (environmentId: EnvironmentId) =>
+      environmentId === primaryEnvironmentId || desktopLocalEnvironmentIds.has(environmentId),
+    [primaryEnvironmentId, desktopLocalEnvironmentIds],
+  );
+  // Projects are checked as well as environments so cached projects from a
+  // currently-disconnected remote still surface the Remote tab.
+  const hasRemoteEnvironments = useMemo(
+    () =>
+      environments.some((environment) => !isLocalEnvironmentId(environment.environmentId)) ||
+      projects.some((project) => !isLocalEnvironmentId(project.environmentId)),
+    [environments, projects, isLocalEnvironmentId],
+  );
+  const activeEnvironmentTab: SidebarEnvironmentTab = hasRemoteEnvironments
+    ? sidebarEnvironmentTab
+    : "local";
   const orderedProjects = useMemo(() => {
     return orderItemsByPreferredIds({
       items: projects,
@@ -3173,6 +3235,48 @@ export default function Sidebar() {
       ],
     });
   }, [projectOrder, projects]);
+
+  // Tab-scoped views of the project/thread lists. `orderedProjects` itself must
+  // stay unfiltered: drag-and-drop passes it to `reorderProjects` as the full
+  // persisted order, so filtering it would erase the other tab's ordering.
+  const tabProjects = useMemo(
+    () =>
+      hasRemoteEnvironments
+        ? orderedProjects.filter(
+            (project) =>
+              isLocalEnvironmentId(project.environmentId) === (activeEnvironmentTab === "local"),
+          )
+        : orderedProjects,
+    [orderedProjects, hasRemoteEnvironments, activeEnvironmentTab, isLocalEnvironmentId],
+  );
+  const tabThreads = useMemo(
+    () =>
+      hasRemoteEnvironments
+        ? sidebarThreads.filter(
+            (thread) =>
+              isLocalEnvironmentId(thread.environmentId) === (activeEnvironmentTab === "local"),
+          )
+        : sidebarThreads,
+    [sidebarThreads, hasRemoteEnvironments, activeEnvironmentTab, isLocalEnvironmentId],
+  );
+  const tabAttention = useMemo(() => {
+    if (!hasRemoteEnvironments) {
+      return { local: false, remote: false };
+    }
+    let local = false;
+    let remote = false;
+    for (const thread of sidebarThreads) {
+      if (thread.archivedAt !== null) continue;
+      if (!thread.hasPendingApprovals && !thread.hasPendingUserInput) continue;
+      if (isLocalEnvironmentId(thread.environmentId)) {
+        local = true;
+      } else {
+        remote = true;
+      }
+      if (local && remote) break;
+    }
+    return { local, remote };
+  }, [hasRemoteEnvironments, sidebarThreads, isLocalEnvironmentId]);
 
   // Build a mapping from physical project key → logical project key for
   // cross-environment grouping.  Projects that share a repositoryIdentity
@@ -3196,7 +3300,7 @@ export default function Sidebar() {
 
   const sidebarProjects = useMemo<SidebarProjectSnapshot[]>(() => {
     return buildSidebarProjectSnapshots({
-      projects: orderedProjects,
+      projects: tabProjects,
       settings: projectGroupingSettings,
       primaryEnvironmentId,
       resolveEnvironmentLabel: (environmentId) => environmentLabelById.get(environmentId) ?? null,
@@ -3205,7 +3309,7 @@ export default function Sidebar() {
   }, [
     environmentLabelById,
     desktopLocalEnvironmentIds,
-    orderedProjects,
+    tabProjects,
     projectGroupingSettings,
     primaryEnvironmentId,
   ]);
@@ -3224,10 +3328,41 @@ export default function Sidebar() {
       ),
     [sidebarThreads],
   );
+  // Which tab the active route thread belongs to, resolved via the unfiltered
+  // thread map so it works regardless of the currently selected tab.
+  const routeThreadTab = useMemo<SidebarEnvironmentTab | null>(() => {
+    if (!routeThreadKey) {
+      return null;
+    }
+    const activeThread = sidebarThreadByKey.get(routeThreadKey);
+    if (!activeThread) return null;
+    return isLocalEnvironmentId(activeThread.environmentId) ? "local" : "remote";
+  }, [routeThreadKey, sidebarThreadByKey, isLocalEnvironmentId]);
+  // Navigating to a thread in the other tab pulls that tab into view once;
+  // afterwards the user is free to browse the other tab with the thread open.
+  const autoSwitchedThreadKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!routeThreadKey || !routeThreadTab || !hasRemoteEnvironments) {
+      return;
+    }
+    if (autoSwitchedThreadKeyRef.current === routeThreadKey) {
+      return;
+    }
+    autoSwitchedThreadKeyRef.current = routeThreadKey;
+    setSidebarEnvironmentTab(routeThreadTab);
+  }, [routeThreadKey, routeThreadTab, hasRemoteEnvironments, setSidebarEnvironmentTab]);
   // Resolve the active route's project key to a logical key so it matches the
-  // sidebar's grouped project entries.
+  // sidebar's grouped project entries. Suppressed while the route thread lives
+  // in the other tab so the same-repo row there doesn't light up.
   const activeRouteProjectKey = useMemo(() => {
     if (!routeThreadKey) {
+      return null;
+    }
+    if (
+      hasRemoteEnvironments &&
+      routeThreadTab !== null &&
+      routeThreadTab !== activeEnvironmentTab
+    ) {
       return null;
     }
     const activeThread = sidebarThreadByKey.get(routeThreadKey);
@@ -3237,13 +3372,21 @@ export default function Sidebar() {
         scopedProjectKey(scopeProjectRef(activeThread.environmentId, activeThread.projectId)),
       ) ?? scopedProjectKey(scopeProjectRef(activeThread.environmentId, activeThread.projectId));
     return physicalToLogicalKey.get(physicalKey) ?? physicalKey;
-  }, [routeThreadKey, sidebarThreadByKey, physicalToLogicalKey, projectPhysicalKeyByScopedRef]);
+  }, [
+    routeThreadKey,
+    routeThreadTab,
+    hasRemoteEnvironments,
+    activeEnvironmentTab,
+    sidebarThreadByKey,
+    physicalToLogicalKey,
+    projectPhysicalKeyByScopedRef,
+  ]);
 
   // Group threads by logical project key so all threads from grouped projects
   // are displayed together.
   const threadsByProjectKey = useMemo(() => {
     const next = new Map<string, SidebarThreadSummary[]>();
-    for (const thread of sidebarThreads) {
+    for (const thread of tabThreads) {
       const physicalKey =
         projectPhysicalKeyByScopedRef.get(
           scopedProjectKey(scopeProjectRef(thread.environmentId, thread.projectId)),
@@ -3257,7 +3400,7 @@ export default function Sidebar() {
       }
     }
     return next;
-  }, [sidebarThreads, physicalToLogicalKey, projectPhysicalKeyByScopedRef]);
+  }, [tabThreads, physicalToLogicalKey, projectPhysicalKeyByScopedRef]);
   const getCurrentSidebarShortcutContext = useCallback(
     () => ({
       terminalFocus: isTerminalFocused(),
@@ -3366,8 +3509,8 @@ export default function Sidebar() {
   }, []);
 
   const visibleThreads = useMemo(
-    () => sidebarThreads.filter((thread) => thread.archivedAt === null),
-    [sidebarThreads],
+    () => tabThreads.filter((thread) => thread.archivedAt === null),
+    [tabThreads],
   );
   const sortedProjects = useMemo(() => {
     const sortableProjects = sidebarProjects.map((project) => ({
@@ -3739,7 +3882,11 @@ export default function Sidebar() {
             suppressProjectClickAfterDragRef={suppressProjectClickAfterDragRef}
             suppressProjectClickForContextMenuRef={suppressProjectClickForContextMenuRef}
             attachProjectListAutoAnimateRef={attachProjectListAutoAnimateRef}
-            projectsLength={projects.length}
+            projectsLength={tabProjects.length}
+            showEnvironmentTabs={hasRemoteEnvironments}
+            environmentTab={activeEnvironmentTab}
+            onEnvironmentTabChange={setSidebarEnvironmentTab}
+            environmentTabAttention={tabAttention}
           />
 
           <SidebarSeparator />
