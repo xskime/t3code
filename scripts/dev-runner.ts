@@ -259,8 +259,12 @@ export function createDevRunnerEnv({
 
     if (!isDesktopMode) {
       output.T3CODE_PORT = String(serverPort);
-      output.VITE_HTTP_URL = `http://localhost:${serverPort}`;
-      output.VITE_WS_URL = `ws://localhost:${serverPort}`;
+      // Derive the API host from --dev-url so browsers on other machines
+      // (ssh/tailscale) reach the backend instead of their own localhost;
+      // explicit VITE_HTTP_URL/VITE_WS_URL env overrides win.
+      const apiHost = devUrl?.hostname ?? "localhost";
+      output.VITE_HTTP_URL = baseEnv.VITE_HTTP_URL ?? `http://${apiHost}:${serverPort}`;
+      output.VITE_WS_URL = baseEnv.VITE_WS_URL ?? `ws://${apiHost}:${serverPort}`;
     } else {
       output.T3CODE_PORT = String(serverPort);
       output.VITE_HTTP_URL = `http://${DESKTOP_DEV_LOOPBACK_HOST}:${serverPort}`;

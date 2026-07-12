@@ -165,16 +165,16 @@ function resolveHttpRequestBaseUrl(primaryTarget: PrimaryEnvironmentTarget): str
     urlKind: "development-server-url",
   });
 
+  // Match the dev server by origin or by port: the Vite dev server proxies
+  // /api to the backend on every interface it listens on, so a page loaded
+  // over the LAN/tailnet (non-loopback host, same port) must also route API
+  // requests through its own origin — a direct cross-origin call would omit
+  // the session cookie.
   const isCurrentOriginDevServer =
     (currentUrl.protocol === "http:" || currentUrl.protocol === "https:") &&
-    currentUrl.origin === devServerUrl.origin;
+    (currentUrl.origin === devServerUrl.origin || currentUrl.port === devServerUrl.port);
 
-  if (
-    !isCurrentOriginDevServer ||
-    currentUrl.origin === targetUrl.origin ||
-    !isLoopbackHostname(currentUrl.hostname) ||
-    !isLoopbackHostname(targetUrl.hostname)
-  ) {
+  if (!isCurrentOriginDevServer || currentUrl.origin === targetUrl.origin) {
     return httpBaseUrl;
   }
 

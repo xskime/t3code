@@ -14,8 +14,12 @@ description: Build, launch, pair, and drive t3ski (T3 Code fork) for runtime ver
 
 ```bash
 export PATH="$HOME/.vite-plus/bin:$HOME/.vite-plus/js_runtime/node/24.18.0/bin:$PATH"
-HOST=0.0.0.0 nohup node scripts/dev-runner.ts dev --host 0.0.0.0 > /tmp/t3ski-dev.log 2>&1 &
+HOST=0.0.0.0 nohup node scripts/dev-runner.ts dev --host 0.0.0.0 \
+  --dev-url http://<tailnet-ip>:5733 --no-browser > /tmp/t3ski-dev.log 2>&1 &
 ```
+
+- `--no-browser` is REQUIRED for unattended runs: otherwise dev-runner auto-opens a local browser that instantly consumes the one-time startup pairing token (every "Invalid pairing token" mystery traces back to this).
+- `--dev-url http://<tailnet-ip>:5733` enables browsing from other machines: it sets VITE_DEV_SERVER_URL (used by the fork's same-origin/proxy rewrite in `apps/web/src/environments/primary/target.ts`) and CORS, and the fork's dev-runner derives VITE_WS_URL from its host so WebSockets connect back correctly. HTTP API calls go through the Vite /api proxy (same-origin cookies); only the WS goes direct to :13773.
 
 Web on :5733, API on :13773. **Gotcha:** killing the dev-runner does NOT kill its `node --watch src/bin.ts` children — orphans keep the port and stale in-memory auth. Kill with `pgrep -fl "bin.ts|dev-runner"` and kill each pid before restarting.
 
