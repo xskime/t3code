@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 45
     env:
       FORK_VERSION: 0.1.${{ github.run_number }}
-      T3CODE_DESKTOP_UPDATE_REPOSITORY: luvskyy/t3code
+      T3CODE_DESKTOP_UPDATE_REPOSITORY: xskime/t3code
       T3CODE_DESKTOP_MAC_PASSKEY_SIGNING: disabled
       CSC_LINK: ${{ secrets.FORK_DESKTOP_CSC_LINK }}
       CSC_KEY_PASSWORD: ${{ secrets.FORK_DESKTOP_CSC_KEY_PASSWORD }}
