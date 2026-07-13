@@ -1,0 +1,79 @@
+name: Fork Desktop Release
+
+on:
+  push:
+    branches:
+      - feature/sidebar-environment-tabs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-desktop-release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Build and publish Apple Silicon app
+    runs-on: macos-14
+    timeout-minutes: 45
+    env:
+      FORK_VERSION: 0.1.${{ github.run_number }}
+      T3CODE_DESKTOP_UPDATE_REPOSITORY: luvskyy/t3code
+      T3CODE_DESKTOP_MAC_PASSKEY_SIGNING: disabled
+      CSC_LINK: ${{ secrets.FORK_DESKTOP_CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.FORK_DESKTOP_CSC_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: true
+
+      - name: Check signing configuration
+        shell: bash
+        run: |
+          if [[ -z "$CSC_LINK" || -z "$CSC_KEY_PASSWORD" ]]; then
+            echo "Fork desktop signing secrets are not configured." >&2
+            exit 1
+          fi
+
+      - name: Check
+        run: vp check
+
+      - name: Typecheck
+        run: vp run typecheck
+
+      - name: Build signed desktop update
+        run: |
+          vp run dist:desktop:artifact \
+            --platform mac \
+            --target dmg \
+            --arch arm64 \
+            --build-version "$FORK_VERSION" \
+            --signed \
+            --verbose
+
+      - name: Publish fork desktop release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: fork-desktop-v${{ env.FORK_VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: Isaac's T3 Code v${{ env.FORK_VERSION }}
+          body: |
+            Personal Apple Silicon desktop build from `${{ github.ref_name }}` at `${{ github.sha }}`.
+          prerelease: false
+          make_latest: true
+          files: |
+            release/*.dmg
+            release/*.zip
+            release/*.blockmap
+            release/*-mac.yml
+          fail_on_unmatched_files: true

@@ -754,6 +754,12 @@ export function resolveMacPasskeySigningConfiguration(
   };
 }
 
+export function shouldConfigureMacPasskeySigning(
+  env: Readonly<Record<string, string | undefined>>,
+): boolean {
+  return env.T3CODE_DESKTOP_MAC_PASSKEY_SIGNING?.trim().toLowerCase() !== "disabled";
+}
+
 function escapeXml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -1689,10 +1695,11 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   // electron-builder is filtering out stageResourcesDir directory in the AppImage for production
   yield* fs.copy(stageResourcesDir, path.join(stageAppDir, "apps/desktop/prod-resources"));
 
+  const repoEnv = loadRepoEnv({ repoRoot });
   const configuredMacPasskeySigning =
-    options.platform === "mac" && options.signed
+    options.platform === "mac" && options.signed && shouldConfigureMacPasskeySigning(repoEnv)
       ? yield* Effect.try({
-          try: () => resolveMacPasskeySigningConfiguration(loadRepoEnv({ repoRoot })),
+          try: () => resolveMacPasskeySigningConfiguration(repoEnv),
           catch: MacPasskeySigningConfigurationResolutionError.fromCause,
         })
       : undefined;

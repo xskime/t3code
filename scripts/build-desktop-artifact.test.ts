@@ -34,6 +34,7 @@ import {
   resolveMockUpdateServerPort,
   resolveMockUpdateServerUrl,
   resolvePackageManagerUserAgent,
+  shouldConfigureMacPasskeySigning,
   stageLinuxIconSize,
   STAGE_INSTALL_ARGS,
 } from "./build-desktop-artifact.ts";
@@ -100,6 +101,14 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       linuxIconPng: BRAND_ASSET_PATHS.nightlyLinuxIconPng,
       windowsIconIco: BRAND_ASSET_PATHS.nightlyWindowsIconIco,
     });
+  });
+
+  it("allows personal signed macOS builds to omit passkey entitlements", () => {
+    assert.equal(shouldConfigureMacPasskeySigning({}), true);
+    assert.equal(
+      shouldConfigureMacPasskeySigning({ T3CODE_DESKTOP_MAC_PASSKEY_SIGNING: "disabled" }),
+      false,
+    );
   });
 
   it.effect("resolves GitHub desktop publish config from Effect config", () =>
