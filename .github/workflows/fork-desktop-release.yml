@@ -16,7 +16,7 @@ concurrency:
 jobs:
   release:
     name: Build and publish Apple Silicon app
-    runs-on: macos-14
+    runs-on: blacksmith-12vcpu-macos-26
     timeout-minutes: 45
     env:
       FORK_VERSION: 0.1.${{ github.run_number }}
