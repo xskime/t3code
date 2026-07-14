@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Locked settings: starCount 190, driftSpeed 8 px/s (nearest layer), driftAngle −π/5, twinkleAmount 0.55, starSize 1.3, shooter gap uniform 3–15 s, shooterMax 2, shooter speed 420–680 px/s, life 0.9–1.4 s, trail 90–160 px, jitter ±0.35 rad, direction = drift + π.
+- Locked settings: starCount 190, driftSpeed 8 px/s (nearest layer), driftAngle −π/5, twinkleAmount 0.55, starSize 1.3, shooter gap uniform 3–15 s, shooterMax 2, shooter speed 420–680 px/s, life 0.9–1.4 s, trail 90–160 px, jitter ±0.175 rad ((random−0.5)×0.35), direction = drift + π.
 - Layers: z 0.35/0.65/1.0 with shares 0.45/0.35/0.20; per-star radius `(0.35 + rand*0.65) * starSize * z`; base alpha `(0.35 + rand*0.5) * (0.45 + 0.55*z)`; twinkle speed 0.3–1.2 cycles/s, random phase.
 - No connecting lines, no cursor interaction, `pointer-events-none`, `aria-hidden="true"`.
 - rAF pauses on `document.hidden`; DPR capped at 2; `prefers-reduced-motion` → static field, no shooters, no drift/twinkle.
@@ -68,14 +68,14 @@ export function spawnShooter(input: {
   height: number;
   settings: ConstellationSettings;
   random?: () => number;
-}): Shooter; // direction = driftAngle + π ± 0.35
+}): Shooter; // direction = driftAngle + π ± 0.175 ((random−0.5)×0.35)
 export function stepShooter(shooter: Shooter, dtSeconds: number): Shooter; // advances position/life
 export function shooterFade(shooter: Shooter): number; // 0..1 envelope: in over first 15%, out over last 30%
 ```
 
 All `random` parameters default to `Math.random` and exist so tests inject a seeded stub.
 
-- [ ] **Step 1: Write failing logic tests** (`ConstellationBackground.logic.test.ts`) — with a stubbed `random`, assert: (a) `createStars` layer shares 45/35/20% of 190 (rounding tolerated ±1) and every star's radius/baseAlpha/twinkleSpeed within the constraint formulas' bounds; (b) `twinkleAlpha` stays within `[0.05, baseAlpha]` across a sampled time sweep and differs between two stars with different phases at the same t; (c) `nextShooterDelayMs` hits exactly min/max at random()=0/1; (d) `canSpawnShooter` false at 2 active, true at 0 and 1; (e) `spawnShooter` direction within ±0.35 rad of `driftAngle + π` and speed within 420–680; (f) `shooterFade` envelope: ~0 at life 0, 1 at mid-life, ~0 at end of `maxLife`.
+- [ ] **Step 1: Write failing logic tests** (`ConstellationBackground.logic.test.ts`) — with a stubbed `random`, assert: (a) `createStars` layer shares 45/35/20% of 190 (rounding tolerated ±1) and every star's radius/baseAlpha/twinkleSpeed within the constraint formulas' bounds; (b) `twinkleAlpha` stays within `[0.05, baseAlpha]` across a sampled time sweep and differs between two stars with different phases at the same t; (c) `nextShooterDelayMs` hits exactly min/max at random()=0/1; (d) `canSpawnShooter` false at 2 active, true at 0 and 1; (e) `spawnShooter` direction within ±0.175 rad ((random−0.5)×0.35) of `driftAngle + π` and speed within 420–680; (f) `shooterFade` envelope: ~0 at life 0, 1 at mid-life, ~0 at end of `maxLife`.
 
 - [ ] **Step 2: Run to verify failure** — `vp run --filter @t3tools/web test -- ConstellationBackground` → FAIL (module missing).
 

@@ -19,7 +19,7 @@
 
 - Three parallax depth layers (z 0.35 / 0.65 / 1.0, shares 45/35/20%): far stars smaller, dimmer, slower. Global drift up-right (angle −π/5) at 8 px/s for the nearest layer; stars wrap at edges.
 - Twinkle: per-star random phase and period (0.3–1.2 cycles/s), modulation depth 0.55 — never synchronized.
-- Shooting stars: fly opposite the drift (+π, ±0.35 rad jitter), 420–680 px/s, 0.9–1.4 s life, fading gradient trail; spawn gap uniform 3–15 s; hard cap 2 concurrent.
+- Shooting stars: fly opposite the drift (+π, jitter ±0.175 rad ((random−0.5)×0.35)), 420–680 px/s, 0.9–1.4 s life, fading gradient trail; spawn gap uniform 3–15 s; hard cap 2 concurrent.
 - NO connecting lines, NO cursor interaction.
 
 ## Non-negotiables (performance-first)

@@ -19,6 +19,7 @@ import { cn } from "~/lib/utils";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const MAX_FRAME_DELTA_SECONDS = 0.05;
+const INITIAL_SHOOTER_SETTLE_MS = 1500;
 const DEFAULT_STAR_RGB = "255, 255, 255";
 const SHOOTER_HEAD_RADIUS = 1.4;
 const SHOOTER_LINE_WIDTH = 1.3;
@@ -36,13 +37,12 @@ function parseStarRgb(color: string): string {
  * Absolutely-positioned canvas starfield for idle surfaces (splash, empty state, pairing).
  * Purely decorative: no pointer interaction, no accessibility surface. All star/shooter math
  * lives in `ConstellationBackground.logic.ts`; this component only owns the canvas/rAF/
- * ResizeObserver/visibility lifecycle.
+ * ResizeObserver/visibility lifecycle. Under prefers-reduced-motion the field is drawn once
+ * (no rAF loop) and only redrawn on resize or theme change.
  */
 export function ConstellationBackground({ className }: { className?: string } = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
-  const reducedMotionRef = useRef(reducedMotion);
-  reducedMotionRef.current = reducedMotion;
 
   useEffect(() => {
     const canvasEl = canvasRef.current;
@@ -80,13 +80,13 @@ export function ConstellationBackground({ className }: { className?: string } = 
       nextShooterAt = now + nextShooterDelayMs(CONSTELLATION_SETTINGS);
     }
 
-    function drawStars(timeSeconds: number, dtSeconds: number, reduced: boolean) {
+    function drawStars(timeSeconds: number, dtSeconds: number, staticField: boolean) {
       const driftX =
         Math.cos(CONSTELLATION_SETTINGS.driftAngle) * CONSTELLATION_SETTINGS.driftSpeed;
       const driftY =
         Math.sin(CONSTELLATION_SETTINGS.driftAngle) * CONSTELLATION_SETTINGS.driftSpeed;
       for (const star of stars) {
-        if (!reduced) {
+        if (!staticField) {
           star.x += driftX * star.z * dtSeconds;
           star.y += driftY * star.z * dtSeconds;
           if (star.x > width + 4) star.x -= width + 8;
@@ -94,7 +94,7 @@ export function ConstellationBackground({ className }: { className?: string } = 
           if (star.y > height + 4) star.y -= height + 8;
           if (star.y < -4) star.y += height + 8;
         }
-        const alpha = reduced
+        const alpha = staticField
           ? star.baseAlpha
           : twinkleAlpha(star, timeSeconds, CONSTELLATION_SETTINGS.twinkleAmount);
         context.beginPath();
@@ -102,6 +102,12 @@ export function ConstellationBackground({ className }: { className?: string } = 
         context.fillStyle = `rgba(${starRgb}, ${alpha.toFixed(3)})`;
         context.fill();
       }
+    }
+
+    /** Reduced-motion path: one static frame, no drift/twinkle/shooters, no rAF loop. */
+    function drawStaticField() {
+      context.clearRect(0, 0, width, height);
+      drawStars(0, 0, true);
     }
 
     function drawShooters(now: number, dtSeconds: number) {
@@ -145,11 +151,8 @@ export function ConstellationBackground({ className }: { className?: string } = 
       last = now;
 
       context.clearRect(0, 0, width, height);
-      const reduced = reducedMotionRef.current;
-      const timeSeconds = now / 1000;
-
-      drawStars(timeSeconds, dtSeconds, reduced);
-      if (!reduced) drawShooters(now, dtSeconds);
+      drawStars(now / 1000, dtSeconds, false);
+      drawShooters(now, dtSeconds);
 
       frameId = requestAnimationFrame(step);
     }
@@ -170,22 +173,29 @@ export function ConstellationBackground({ className }: { className?: string } = 
 
     const resizeObserver = new ResizeObserver(() => {
       resizeAndReseed();
+      if (reducedMotion) drawStaticField();
     });
     resizeObserver.observe(parent);
 
     const colorMutationObserver = new MutationObserver(() => {
       starRgb = parseStarRgb(getComputedStyle(canvas).color);
+      if (reducedMotion) drawStaticField();
     });
     colorMutationObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
     resizeAndReseed();
-    scheduleNextShooter(performance.now());
-    frameId = requestAnimationFrame(step);
+
+    if (reducedMotion) {
+      drawStaticField();
+    } else {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      // Let the surface settle before the first shooter, mirroring the prototype's 1.5s delay.
+      scheduleNextShooter(performance.now() + INITIAL_SHOOTER_SETTLE_MS);
+      frameId = requestAnimationFrame(step);
+    }
 
     return () => {
       running = false;
@@ -194,7 +204,7 @@ export function ConstellationBackground({ className }: { className?: string } = 
       colorMutationObserver.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [reducedMotion]);
 
   return (
     <canvas

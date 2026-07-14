@@ -5,8 +5,7 @@
  * this module every frame.
  *
  * Ported verbatim from the approved prototype (constants restated in the implementation plan's
- * "Global Constraints"), with one deliberate deviation: the shooter angle jitter uses the full
- * ±0.35 rad window called out in the design spec, not the prototype's narrower ±0.175 rad.
+ * "Global Constraints").
  */
 
 export interface ConstellationSettings {
@@ -114,7 +113,7 @@ export interface Shooter {
   trail: number;
 }
 
-const SHOOTER_ANGLE_JITTER = 0.35;
+const SHOOTER_ANGLE_JITTER_SPAN = 0.35; // (random - 0.5) * span → ±0.175 rad, per the prototype
 const SHOOTER_MIN_SPEED = 420;
 const SHOOTER_SPEED_RANGE = 260;
 const SHOOTER_MIN_LIFE_SECONDS = 0.9;
@@ -135,7 +134,7 @@ export function spawnShooter(input: {
   const random = input.random ?? Math.random;
 
   // Shooters fly opposite the ambient drift, with jitter so they don't all share one line.
-  const jitter = (random() * 2 - 1) * SHOOTER_ANGLE_JITTER;
+  const jitter = (random() - 0.5) * SHOOTER_ANGLE_JITTER_SPAN;
   const angle = settings.driftAngle + Math.PI + jitter;
   const speed = SHOOTER_MIN_SPEED + random() * SHOOTER_SPEED_RANGE;
   const dx = Math.cos(angle);

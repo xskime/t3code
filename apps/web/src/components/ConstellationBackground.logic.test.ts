@@ -165,7 +165,7 @@ describe("spawnShooter", () => {
     return Math.atan2(Math.sin(angle - baseAngle), Math.cos(angle - baseAngle));
   }
 
-  it("aims within ±0.35 rad of driftAngle + π, hitting the extremes at random()=0/1", () => {
+  it("aims within ±0.175 rad of driftAngle + π ((random−0.5)×0.35), hitting the extremes at random()=0/1", () => {
     const low = spawnShooter({ width, height, settings: CONSTELLATION_SETTINGS, random: () => 0 });
     const high = spawnShooter({ width, height, settings: CONSTELLATION_SETTINGS, random: () => 1 });
     const mid = spawnShooter({
@@ -175,8 +175,8 @@ describe("spawnShooter", () => {
       random: () => 0.5,
     });
 
-    expect(angleDeltaFromBase(low)).toBeCloseTo(-0.35, 5);
-    expect(angleDeltaFromBase(high)).toBeCloseTo(0.35, 5);
+    expect(angleDeltaFromBase(low)).toBeCloseTo(-0.175, 5);
+    expect(angleDeltaFromBase(high)).toBeCloseTo(0.175, 5);
     expect(angleDeltaFromBase(mid)).toBeCloseTo(0, 5);
   });
 
