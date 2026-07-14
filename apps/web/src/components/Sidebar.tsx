@@ -76,6 +76,7 @@ import { isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
 import { useDesktopLocalBootstraps } from "../connection/useDesktopLocalBootstraps";
 import { isElectron } from "../env";
 import { APP_STAGE_LABEL } from "../branding";
+import { resolveAppChannel } from "../branding.logic";
 import { useOpenPrLink } from "../lib/openPullRequestLink";
 import { isTerminalFocused } from "../lib/terminalFocus";
 import { isMacPlatform } from "../lib/utils";
@@ -2760,41 +2761,24 @@ const SidebarChromeHeader = memo(function SidebarChromeHeader({
 
 function SidebarBrand() {
   const stageLabel = useSidebarStageLabel();
+  const channel = resolveAppChannel({ stageLabel });
 
   return (
     <Link
       aria-label="Go to threads"
-      className="sidebar-brand ml-[var(--workspace-titlebar-content-left)] h-7 w-fit min-w-0 shrink-0 items-center gap-1 overflow-hidden rounded-md text-foreground outline-hidden ring-ring focus-visible:ring-2"
+      className="sidebar-brand ml-[var(--workspace-titlebar-content-left)] h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md font-mono text-[13px] font-medium text-foreground outline-hidden ring-ring focus-visible:ring-2"
+      style={{ fontFamily: '"JetBrains Mono", monospace' }}
       to="/"
     >
-      <SkiWordmark />
-      <span className="truncate text-sm font-medium tracking-tight text-muted-foreground">
-        Code
+      <span className="sidebar-brand-path truncate whitespace-nowrap">
+        <span className="opacity-40">~/x/ski/</span>
+        code
+        <span className="opacity-40">/{channel}</span>
       </span>
-      <span className="sidebar-brand-stage shrink-0 items-center whitespace-nowrap rounded-full bg-muted/50 px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground/60">
-        {stageLabel}
+      <span className="sidebar-brand-path-compact whitespace-nowrap">
+        <span className="opacity-40">/</span>code
       </span>
     </Link>
-  );
-}
-
-function SkiWordmark() {
-  return (
-    <svg
-      aria-label="Ski"
-      className="h-3 w-auto shrink-0 text-foreground"
-      viewBox="-10 0 111 56"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Square-cut "SKI" with a 10° oblique shear; cap height steps down S→K→I like a piste. */}
-      <g fill="currentColor" transform="skewX(-10)">
-        <path d="M0 0H40L32 12H0V0ZM0 12H12V22H0V12ZM0 22H40V34H0V22ZM28 34H40V44H28V34ZM8 44H40V56H0L8 44Z" />
-        <rect x="46" y="6" width="12" height="50" />
-        <path d="M52 32L64 32L78 6L66 6Z" />
-        <path d="M52 24L64 24L82 56L70 56Z" />
-        <rect x="90" y="12" width="12" height="44" />
-      </g>
-    </svg>
   );
 }
 
