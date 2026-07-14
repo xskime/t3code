@@ -265,6 +265,19 @@
     color: var(--tool-cat);
   }
 
+  /*
+   * Settled (non-running) collab-agent logos always render mono, regardless
+   * of the brand fill each provider icon hardcodes on its own <svg> (some via
+   * a plain `fill-*` class, some via a `dark:fill-*` variant that
+   * `tailwind-merge` cannot reliably strip, some via a hardcoded per-path
+   * `fill` attribute). A `!important` class override is the only mechanism
+   * that wins against all three uniformly.
+   */
+  .tool-logo-mono,
+  .tool-logo-mono * {
+    fill: color-mix(in oklab, var(--muted-foreground) 65%, transparent) !important;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .tool-heading-running {
       background: linear-gradient(
@@ -279,8 +292,49 @@
       color: transparent;
       animation: tool-shimmer 1.8s linear infinite;
     }
-    .tool-icon-running svg {
+    /*
+     * svgs with a bespoke animation (a tool-anim- or tool-logo- marker class)
+     * opt out of the generic pulse via :not() rather than an
+     * `animation-name: inherit` override — the latter's extra `svg` type
+     * selector out-specificities the svg-level bespoke rules below (read,
+     * mcp, tool, claude, openai all animate the marker class directly), so
+     * it would cancel their animation-name too.
+     */
+    .tool-icon-running svg:not([class*="tool-anim-"]):not([class*="tool-logo-"]) {
       animation: tool-icon-pulse 1.6s ease-in-out infinite;
+    }
+    .tool-icon-running .tool-anim-terminal .t-cursor {
+      animation: tool-cursor-blink 1.1s step-end infinite;
+    }
+    .tool-icon-running .tool-anim-edit .t-pen {
+      transform-box: fill-box;
+      transform-origin: 15% 85%;
+      animation: tool-pen-write 1.1s ease-in-out infinite;
+    }
+    .tool-icon-running .tool-anim-read {
+      transform-origin: center;
+      animation: tool-eye-blink 3.2s ease-in-out infinite;
+    }
+    .tool-icon-running .tool-anim-web .t-meridian {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: tool-globe-spin 2.2s ease-in-out infinite;
+    }
+    .tool-icon-running .tool-anim-mcp {
+      transform-origin: center;
+      animation: tool-wrench-turn 1.6s ease-in-out infinite;
+    }
+    .tool-icon-running .tool-anim-tool {
+      transform-origin: 20% 90%;
+      animation: tool-hammer-tap 1.4s ease-in-out infinite;
+    }
+    .tool-icon-running .tool-logo-claude {
+      transform-origin: center;
+      animation: tool-claude-twinkle 1.8s ease-in-out infinite;
+    }
+    .tool-icon-running .tool-logo-openai {
+      transform-origin: center;
+      animation: tool-openai-spin 2.8s linear infinite;
     }
   }
 }
@@ -292,6 +346,85 @@
 @keyframes tool-icon-pulse {
   50% {
     opacity: 0.45;
+  }
+}
+@keyframes tool-cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes tool-pen-write {
+  0%,
+  100% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+  25% {
+    transform: rotate(-5deg) translate(-0.5px, 0.3px);
+  }
+  55% {
+    transform: rotate(3deg) translate(0.4px, -0.2px);
+  }
+  80% {
+    transform: rotate(-2deg) translate(-0.2px, 0.1px);
+  }
+}
+@keyframes tool-eye-blink {
+  0%,
+  86%,
+  96%,
+  100% {
+    transform: scaleY(1);
+  }
+  91% {
+    transform: scaleY(0.12);
+  }
+}
+@keyframes tool-globe-spin {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.08);
+  }
+}
+@keyframes tool-wrench-turn {
+  0%,
+  45%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-28deg);
+  }
+}
+@keyframes tool-hammer-tap {
+  0%,
+  40%,
+  100% {
+    transform: rotate(0deg);
+  }
+  14% {
+    transform: rotate(-6deg);
+  }
+  26% {
+    transform: rotate(14.5deg);
+  }
+}
+@keyframes tool-claude-twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.16) rotate(8deg);
+    filter: brightness(1.4);
+  }
+}
+@keyframes tool-openai-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

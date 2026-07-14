@@ -214,6 +214,26 @@ export function workEntryToolCategory(entry: {
   return null;
 }
 
+export type CollabAgentLogoKind = "openai" | "claude" | "cursor" | "grok" | "opencode";
+
+const COLLAB_AGENT_LOGO_KIND_BY_DRIVER_KIND: Record<string, CollabAgentLogoKind> = {
+  codex: "openai",
+  claudeAgent: "claude",
+  cursor: "cursor",
+  grok: "grok",
+  opencode: "opencode",
+};
+
+/** Maps a provider driver kind to the logo shown for collab-agent tool-call rows. */
+export function collabAgentLogoKind(
+  driverKind: string | null | undefined,
+): CollabAgentLogoKind | null {
+  if (!driverKind) {
+    return null;
+  }
+  return COLLAB_AGENT_LOGO_KIND_BY_DRIVER_KIND[driverKind] ?? null;
+}
+
 export function resolveAssistantMessageCopyState({
   text,
   showCopyButton,

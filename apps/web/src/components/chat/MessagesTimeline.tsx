@@ -66,6 +66,7 @@ import { ChangedFilesTree } from "./ChangedFilesTree";
 import { DiffStatLabel, hasNonZeroStat } from "./DiffStatLabel";
 import { MessageCopyButton } from "./MessageCopyButton";
 import {
+  collabAgentLogoKind,
   computeStableMessagesTimelineRows,
   deriveMessagesTimelineRows,
   normalizeCompactToolLabel,
@@ -82,6 +83,7 @@ import {
   workEntryToolCategory,
   type ToolCallCategory,
 } from "./MessagesTimeline.logic";
+import { AnimatedToolIcon, CollabAgentLogo } from "./WorkEntryToolIcon";
 import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
@@ -142,6 +144,7 @@ interface TimelineRowActivityState {
   isWorking: boolean;
   isRevertingCheckpoint: boolean;
   activeTurnInProgress: boolean;
+  providerDriverKind: string | null;
 }
 
 const TimelineRowCtx = createContext<TimelineRowSharedState>(null!);
@@ -181,6 +184,7 @@ interface MessagesTimelineProps {
   contentInsetEndAdjustment: number;
   onIsAtEndChange: (isAtEnd: boolean) => void;
   onManualNavigation: () => void;
+  providerDriverKind?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,6 +218,7 @@ export const MessagesTimeline = memo(function MessagesTimeline({
   contentInsetEndAdjustment,
   onIsAtEndChange,
   onManualNavigation,
+  providerDriverKind = null,
 }: MessagesTimelineProps) {
   const [expandedTurnIds, setExpandedTurnIds] = useState<ReadonlySet<TurnId>>(new Set());
   const [expandedWorkGroupIds, setExpandedWorkGroupIds] = useState<ReadonlySet<string>>(new Set());
@@ -444,8 +449,9 @@ export const MessagesTimeline = memo(function MessagesTimeline({
       isWorking,
       isRevertingCheckpoint,
       activeTurnInProgress,
+      providerDriverKind,
     }),
-    [activeTurnInProgress, isRevertingCheckpoint, isWorking],
+    [activeTurnInProgress, isRevertingCheckpoint, isWorking, providerDriverKind],
   );
 
   // Stable renderItem — no closure deps. Row components read shared state
@@ -1938,6 +1944,13 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
   const turnSettled = !activity.activeTurnInProgress;
   const showNeutralIndicator = !turnSettled && workEntryIndicatesToolNeutralStatus(workEntry);
   const isRunning = showNeutralIndicator;
+  // The warning icon ("x") always wins — a collab-agent row that also
+  // reports a runtime warning must keep showing the warning glyph, not the
+  // provider logo.
+  const logoKind =
+    !showWarningIndicator && workEntry.itemType === "collab_agent_tool_call"
+      ? collabAgentLogoKind(activity.providerDriverKind)
+      : null;
   const iconWrapperClass = cn(
     "flex size-5 shrink-0 items-center justify-center",
     showWarningIndicator
@@ -1991,10 +2004,19 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
     >
       <div className="flex select-none items-center gap-1.5 transition-[opacity,translate] duration-200">
         <span className={iconWrapperClass}>
-          <WorkEntryIconSvg
-            name={entryIconName}
-            className="block size-3.5 shrink-0 stroke-[1.8] opacity-80"
-          />
+          {logoKind ? (
+            <CollabAgentLogo
+              kind={logoKind}
+              className={cn("size-3.5", `tool-logo-${logoKind}`, !isRunning && "tool-logo-mono")}
+            />
+          ) : isRunning && category && category !== "agent" ? (
+            <AnimatedToolIcon category={category} className="size-3.5" />
+          ) : (
+            <WorkEntryIconSvg
+              name={entryIconName}
+              className="block size-3.5 shrink-0 stroke-[1.8] opacity-80"
+            />
+          )}
         </span>
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <div className="min-w-0 flex-1 overflow-hidden">

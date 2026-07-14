@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  collabAgentLogoKind,
   computeStableMessagesTimelineRows,
   computeMessageDurationStart,
   deriveMessagesTimelineRows,
@@ -280,6 +281,40 @@ describe("workEntryToolCategory", () => {
 
   it("returns null when nothing matches", () => {
     expect(workEntryToolCategory({})).toBeNull();
+  });
+});
+
+describe("collabAgentLogoKind", () => {
+  it("maps codex to openai", () => {
+    expect(collabAgentLogoKind("codex")).toBe("openai");
+  });
+
+  it("maps claudeAgent to claude", () => {
+    expect(collabAgentLogoKind("claudeAgent")).toBe("claude");
+  });
+
+  it("maps cursor to cursor", () => {
+    expect(collabAgentLogoKind("cursor")).toBe("cursor");
+  });
+
+  it("maps grok to grok", () => {
+    expect(collabAgentLogoKind("grok")).toBe("grok");
+  });
+
+  it("maps opencode to opencode", () => {
+    expect(collabAgentLogoKind("opencode")).toBe("opencode");
+  });
+
+  it("returns null for null", () => {
+    expect(collabAgentLogoKind(null)).toBeNull();
+  });
+
+  it("returns null for undefined", () => {
+    expect(collabAgentLogoKind(undefined)).toBeNull();
+  });
+
+  it("returns null for an unknown driver kind", () => {
+    expect(collabAgentLogoKind("unknown")).toBeNull();
   });
 });
 
