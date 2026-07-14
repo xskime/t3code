@@ -55,7 +55,7 @@ With the Windows build, one client talks to several remotes (mac mini, macbook, 
 
 ## Commit structure
 
-Two commits: (1) Part A cosmetics (replaces the Ski Code rebrand surfaces), (2) Part B remote scope with tests. The existing Ski Code commit `429415c71` stays in history; this supersedes its strings/assets in place.
+Part A cosmetics commits land before Part B remote-scope commits (one commit per plan task). The existing Ski Code commit `429415c71` stays in history; this supersedes its strings/assets in place.
 
 ## Verification
 
