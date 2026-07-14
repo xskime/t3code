@@ -156,7 +156,6 @@ import {
 import { Input } from "./ui/input";
 import {
   Menu,
-  MenuCheckboxItem,
   MenuGroup,
   MenuPopup,
   MenuRadioGroup,
@@ -2993,7 +2992,7 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
               <Toggle
                 aria-label="Remote projects"
                 value="remote"
-                className={cn("w-full gap-1.5", remoteEnvironments.length > 1 && "pr-5")}
+                className={cn("w-full gap-1.5", remoteEnvironments.length > 1 && "pr-6")}
               >
                 {remoteScope === "all" ? (
                   "Remote"
@@ -3018,22 +3017,28 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
                     <ChevronDownIcon className="size-3" />
                   </MenuTrigger>
                   <MenuPopup align="end">
-                    <MenuCheckboxItem
-                      checked={remoteScope === "all"}
-                      onClick={() => onRemoteScopeChange("all")}
+                    <MenuRadioGroup
+                      value={remoteScope}
+                      onValueChange={(value) => {
+                        if (typeof value === "string") {
+                          onRemoteScopeChange(value);
+                        }
+                      }}
                     >
-                      all remotes
-                    </MenuCheckboxItem>
-                    <MenuSeparator />
-                    {remoteEnvironments.map((environment) => (
-                      <MenuCheckboxItem
-                        key={environment.environmentId}
-                        checked={remoteScope === environment.environmentId}
-                        onClick={() => onRemoteScopeChange(environment.environmentId)}
-                      >
-                        {environment.label}
-                      </MenuCheckboxItem>
-                    ))}
+                      <MenuRadioItem closeOnClick value="all">
+                        all remotes
+                      </MenuRadioItem>
+                      <MenuSeparator />
+                      {remoteEnvironments.map((environment) => (
+                        <MenuRadioItem
+                          key={environment.environmentId}
+                          closeOnClick
+                          value={environment.environmentId}
+                        >
+                          {environment.label}
+                        </MenuRadioItem>
+                      ))}
+                    </MenuRadioGroup>
                   </MenuPopup>
                 </Menu>
               ) : null}
