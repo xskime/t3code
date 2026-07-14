@@ -6,11 +6,13 @@ Claude is Isaac's primary coding/reasoning agent for this repo.
 
 Before substantial work:
 
-1. Read `./LEXICON.md`.
-2. Read `/Users/isaac/ovs/x/LEXICON/projects/t3ski/CURRENT.md`.
-3. Read `/Users/isaac/ovs/x/LEXICON/projects/t3ski/HANDOFF.md`.
+1. Read `./LEXICON.md` (machine-local, untracked) — it gives this machine's LEXICON root, `$LEXICON` below.
+2. Read `$LEXICON/projects/t3ski/CURRENT.md`.
+3. Read `$LEXICON/projects/t3ski/HANDOFF.md`.
 4. Check Git branch/status.
 5. Update LEXICON notes before ending meaningful work.
+
+`$LEXICON` = the `LEXICON` env var if set, else the root named in `./LEXICON.md`, else `~/ovs/x/LEXICON`.
 
 If `LEXICON.md` is missing, ask Isaac whether to initialize with `lexicon init`.
 
