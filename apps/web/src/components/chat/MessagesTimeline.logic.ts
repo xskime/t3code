@@ -166,7 +166,7 @@ export function normalizeCompactToolLabel(value: string): string {
   return value.replace(/\s+(?:complete|completed)\s*$/i, "").trim();
 }
 
-export type ToolCallCategory = "terminal" | "edit" | "read" | "web" | "mcp" | "agent";
+export type ToolCallCategory = "terminal" | "edit" | "read" | "web" | "mcp" | "agent" | "tool";
 
 /**
  * Maps a work-log entry to its icon-color category. Branch order mirrors
@@ -204,7 +204,7 @@ export function workEntryToolCategory(entry: {
     case "mcp_tool_call":
       return "mcp";
     case "dynamic_tool_call":
-      return "mcp";
+      return "tool";
     case "collab_agent_tool_call":
       return "agent";
   }

@@ -257,6 +257,9 @@
   .tool-cat-agent {
     --tool-cat: var(--tool-agent);
   }
+  .tool-cat-tool {
+    --tool-cat: var(--tool-tool);
+  }
 
   .tool-cat-ink {
     color: var(--tool-cat);
@@ -327,6 +330,7 @@
   --tool-web: #0d8f8b;
   --tool-mcp: #6d3fd4;
   --tool-agent: #c02993;
+  --tool-tool: #d35f0f;
 
   @variant dark {
     color-scheme: dark;
@@ -362,6 +366,7 @@
     --tool-web: #64d3d0;
     --tool-mcp: #b79df7;
     --tool-agent: #ef9fda;
+    --tool-tool: #f2a05f;
   }
 }
 

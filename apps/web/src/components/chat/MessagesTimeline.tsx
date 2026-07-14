@@ -1904,6 +1904,7 @@ const TOOL_CATEGORY_CLASS: Record<ToolCallCategory, string> = {
   web: "tool-cat-web",
   mcp: "tool-cat-mcp",
   agent: "tool-cat-agent",
+  tool: "tool-cat-tool",
 };
 
 const stopRowToggle = (e: { stopPropagation: () => void }) => e.stopPropagation();
@@ -1943,7 +1944,7 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
       ? "text-destructive"
       : showDestructiveRowStyle
         ? "text-destructive"
-        : !showFailedIndicator && category
+        : !showFailedIndicator && isRunning && category
           ? "tool-cat-ink"
           : workEntry.tone === "tool" || showFailedIndicator
             ? "text-muted-foreground/65"
@@ -1955,7 +1956,7 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
       ? "font-medium text-warning"
       : showDestructiveRowStyle
         ? "font-medium text-destructive"
-        : category
+        : isRunning && category
           ? "font-medium tool-cat-ink"
           : "font-medium text-foreground/82",
     isRunning && "tool-heading-running",
@@ -1984,7 +1985,7 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
         "flex flex-col rounded-md px-0.5 py-0.5 transition-colors",
         canExpand &&
           "cursor-pointer hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/70",
-        category && TOOL_CATEGORY_CLASS[category],
+        isRunning && category && TOOL_CATEGORY_CLASS[category],
       )}
       {...rowToggleProps}
     >

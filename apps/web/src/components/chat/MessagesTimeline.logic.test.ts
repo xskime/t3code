@@ -244,8 +244,8 @@ describe("workEntryToolCategory", () => {
     expect(workEntryToolCategory({ itemType: "mcp_tool_call" })).toBe("mcp");
   });
 
-  it("categorizes itemType dynamic_tool_call as mcp", () => {
-    expect(workEntryToolCategory({ itemType: "dynamic_tool_call" })).toBe("mcp");
+  it("categorizes itemType dynamic_tool_call as tool", () => {
+    expect(workEntryToolCategory({ itemType: "dynamic_tool_call" })).toBe("tool");
   });
 
   it("categorizes itemType collab_agent_tool_call as agent", () => {
