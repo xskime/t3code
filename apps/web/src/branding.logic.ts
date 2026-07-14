@@ -4,7 +4,16 @@ export function formatAppDisplayName(input: {
   readonly baseName: string;
   readonly stageLabel: string;
 }): string {
-  return `${input.baseName} (${input.stageLabel})`;
+  // Brand voice: the stage is a path segment in the lockup, never a name suffix.
+  return input.baseName;
+}
+
+export type AppChannel = "stable" | "nightly" | "dev";
+
+export function resolveAppChannel(input: { readonly stageLabel: string }): AppChannel {
+  if (input.stageLabel === "Dev") return "dev";
+  if (input.stageLabel === "Nightly") return "nightly";
+  return "stable";
 }
 
 export function resolveServerBackedAppStageLabel(input: {
