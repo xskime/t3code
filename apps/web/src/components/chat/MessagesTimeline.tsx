@@ -79,6 +79,8 @@ import {
   type MessagesTimelineRow,
   TIMELINE_MINIMAP_MIN_ITEMS,
   type TimelineLatestTurn,
+  workEntryToolCategory,
+  type ToolCallCategory,
 } from "./MessagesTimeline.logic";
 import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -1895,6 +1897,15 @@ function toolWorkEntryHeading(workEntry: TimelineWorkEntry): string {
   return capitalizePhrase(normalizeCompactToolLabel(workEntry.toolTitle));
 }
 
+const TOOL_CATEGORY_CLASS: Record<ToolCallCategory, string> = {
+  terminal: "tool-cat-terminal",
+  edit: "tool-cat-edit",
+  read: "tool-cat-read",
+  web: "tool-cat-web",
+  mcp: "tool-cat-mcp",
+  agent: "tool-cat-agent",
+};
+
 const stopRowToggle = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
 const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
@@ -1922,23 +1933,33 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
   const showDestructiveRowStyle =
     showFailedIndicator &&
     (workEntry.sourceActivityKind === "runtime.error" || !workLogEntryIsToolLike(workEntry));
+  const category = workEntryToolCategory(workEntry);
+  const turnSettled = !activity.activeTurnInProgress;
+  const showNeutralIndicator = !turnSettled && workEntryIndicatesToolNeutralStatus(workEntry);
+  const isRunning = showNeutralIndicator;
   const iconWrapperClass = cn(
     "flex size-5 shrink-0 items-center justify-center",
     showWarningIndicator
       ? "text-destructive"
       : showDestructiveRowStyle
         ? "text-destructive"
-        : workEntry.tone === "tool" || showFailedIndicator
-          ? "text-muted-foreground/65"
-          : iconConfig.className,
+        : !showFailedIndicator && category
+          ? "tool-cat-ink"
+          : workEntry.tone === "tool" || showFailedIndicator
+            ? "text-muted-foreground/65"
+            : iconConfig.className,
+    isRunning && "tool-icon-running",
   );
-  const headingClass = showWarningIndicator
-    ? "font-medium text-warning"
-    : showDestructiveRowStyle
-      ? "font-medium text-destructive"
-      : "font-medium text-foreground/82";
-  const turnSettled = !activity.activeTurnInProgress;
-  const showNeutralIndicator = !turnSettled && workEntryIndicatesToolNeutralStatus(workEntry);
+  const headingClass = cn(
+    showWarningIndicator
+      ? "font-medium text-warning"
+      : showDestructiveRowStyle
+        ? "font-medium text-destructive"
+        : category
+          ? "font-medium tool-cat-ink"
+          : "font-medium text-foreground/82",
+    isRunning && "tool-heading-running",
+  );
   const showSuccessIndicator =
     workEntryIndicatesToolSuccess(workEntry) ||
     (turnSettled && workEntryIndicatesToolNeutralStatus(workEntry));
@@ -1963,6 +1984,7 @@ const SimpleWorkEntryRow = memo(function SimpleWorkEntryRow(props: {
         "flex flex-col rounded-md px-0.5 py-0.5 transition-colors",
         canExpand &&
           "cursor-pointer hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/70",
+        category && TOOL_CATEGORY_CLASS[category],
       )}
       {...rowToggleProps}
     >

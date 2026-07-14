@@ -166,6 +166,54 @@ export function normalizeCompactToolLabel(value: string): string {
   return value.replace(/\s+(?:complete|completed)\s*$/i, "").trim();
 }
 
+export type ToolCallCategory = "terminal" | "edit" | "read" | "web" | "mcp" | "agent";
+
+/**
+ * Maps a work-log entry to its icon-color category. Branch order mirrors
+ * `workEntryIconName` in MessagesTimeline.tsx exactly so icon and color
+ * never disagree — keep the two in lockstep when either changes.
+ */
+export function workEntryToolCategory(entry: {
+  readonly requestKind?: string | null;
+  readonly itemType?: string | null;
+  readonly command?: string | null;
+  readonly changedFiles?: readonly string[] | null;
+  readonly tone?: string | null;
+  readonly sourceActivityKind?: string | null;
+}): ToolCallCategory | null {
+  if (
+    entry.sourceActivityKind === "user-input.requested" ||
+    entry.sourceActivityKind === "user-input.resolved"
+  ) {
+    return null;
+  }
+  if (entry.requestKind === "command") return "terminal";
+  if (entry.requestKind === "file-read") return "read";
+  if (entry.requestKind === "file-change") return "edit";
+
+  if (entry.itemType === "command_execution" || entry.command) {
+    return "terminal";
+  }
+  if (entry.itemType === "file_change" || (entry.changedFiles?.length ?? 0) > 0) {
+    return "edit";
+  }
+  if (entry.itemType === "web_search") return "web";
+  if (entry.itemType === "image_view") return "read";
+
+  switch (entry.itemType) {
+    case "mcp_tool_call":
+      return "mcp";
+    case "dynamic_tool_call":
+      return "mcp";
+    case "collab_agent_tool_call":
+      return "agent";
+  }
+
+  if (entry.tone === "thinking") return "agent";
+
+  return null;
+}
+
 export function resolveAssistantMessageCopyState({
   text,
   showCopyButton,

@@ -237,6 +237,61 @@
   animation-duration: 0s !important;
 }
 
+/* Tool-call category ink (icon + heading colors) and running shimmer/pulse. */
+@layer components {
+  .tool-cat-terminal {
+    --tool-cat: var(--tool-terminal);
+  }
+  .tool-cat-edit {
+    --tool-cat: var(--tool-edit);
+  }
+  .tool-cat-read {
+    --tool-cat: var(--tool-read);
+  }
+  .tool-cat-web {
+    --tool-cat: var(--tool-web);
+  }
+  .tool-cat-mcp {
+    --tool-cat: var(--tool-mcp);
+  }
+  .tool-cat-agent {
+    --tool-cat: var(--tool-agent);
+  }
+
+  .tool-cat-ink {
+    color: var(--tool-cat);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .tool-heading-running {
+      background: linear-gradient(
+        100deg,
+        var(--tool-cat, currentColor) 20%,
+        color-mix(in oklab, var(--tool-cat, currentColor) 30%, var(--foreground)) 40%,
+        var(--tool-cat, currentColor) 60%
+      );
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: tool-shimmer 1.8s linear infinite;
+    }
+    .tool-icon-running svg {
+      animation: tool-icon-pulse 1.6s ease-in-out infinite;
+    }
+  }
+}
+@keyframes tool-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes tool-icon-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 :root {
   color-scheme: light;
   --radius: 0.625rem;
@@ -266,6 +321,12 @@
   --success-foreground: var(--color-emerald-700);
   --warning: var(--color-amber-500);
   --warning-foreground: var(--color-amber-700);
+  --tool-terminal: #1e8f3d;
+  --tool-edit: #b26b00;
+  --tool-read: #1667c4;
+  --tool-web: #0d8f8b;
+  --tool-mcp: #6d3fd4;
+  --tool-agent: #c02993;
 
   @variant dark {
     color-scheme: dark;
@@ -295,6 +356,12 @@
     --success-foreground: var(--color-emerald-400);
     --warning: var(--color-amber-500);
     --warning-foreground: var(--color-amber-400);
+    --tool-terminal: #7fd88f;
+    --tool-edit: #e5b567;
+    --tool-read: #7ab8f5;
+    --tool-web: #64d3d0;
+    --tool-mcp: #b79df7;
+    --tool-agent: #ef9fda;
   }
 }
 

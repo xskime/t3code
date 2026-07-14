@@ -5,6 +5,7 @@ import {
   deriveMessagesTimelineRows,
   normalizeCompactToolLabel,
   resolveAssistantMessageCopyState,
+  workEntryToolCategory,
 } from "./MessagesTimeline.logic";
 
 describe("computeMessageDurationStart", () => {
@@ -203,6 +204,82 @@ describe("normalizeCompactToolLabel", () => {
 
   it("removes trailing completion wording from other labels", () => {
     expect(normalizeCompactToolLabel("Read file completed")).toBe("Read file");
+  });
+});
+
+describe("workEntryToolCategory", () => {
+  it("categorizes requestKind command as terminal", () => {
+    expect(workEntryToolCategory({ requestKind: "command" })).toBe("terminal");
+  });
+
+  it("categorizes itemType command_execution as terminal", () => {
+    expect(workEntryToolCategory({ itemType: "command_execution" })).toBe("terminal");
+  });
+
+  it("categorizes requestKind file-change as edit", () => {
+    expect(workEntryToolCategory({ requestKind: "file-change" })).toBe("edit");
+  });
+
+  it("categorizes itemType file_change as edit", () => {
+    expect(workEntryToolCategory({ itemType: "file_change" })).toBe("edit");
+  });
+
+  it("categorizes changedFiles presence as edit", () => {
+    expect(workEntryToolCategory({ changedFiles: ["src/a.ts"] })).toBe("edit");
+  });
+
+  it("categorizes requestKind file-read as read", () => {
+    expect(workEntryToolCategory({ requestKind: "file-read" })).toBe("read");
+  });
+
+  it("categorizes itemType image_view as read", () => {
+    expect(workEntryToolCategory({ itemType: "image_view" })).toBe("read");
+  });
+
+  it("categorizes itemType web_search as web", () => {
+    expect(workEntryToolCategory({ itemType: "web_search" })).toBe("web");
+  });
+
+  it("categorizes itemType mcp_tool_call as mcp", () => {
+    expect(workEntryToolCategory({ itemType: "mcp_tool_call" })).toBe("mcp");
+  });
+
+  it("categorizes itemType dynamic_tool_call as mcp", () => {
+    expect(workEntryToolCategory({ itemType: "dynamic_tool_call" })).toBe("mcp");
+  });
+
+  it("categorizes itemType collab_agent_tool_call as agent", () => {
+    expect(workEntryToolCategory({ itemType: "collab_agent_tool_call" })).toBe("agent");
+  });
+
+  it("categorizes tone thinking as agent", () => {
+    expect(workEntryToolCategory({ tone: "thinking" })).toBe("agent");
+  });
+
+  it("returns null for user-input.requested even with a command present", () => {
+    expect(
+      workEntryToolCategory({
+        sourceActivityKind: "user-input.requested",
+        command: "ls -la",
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null for user-input.resolved even with a command present", () => {
+    expect(
+      workEntryToolCategory({
+        sourceActivityKind: "user-input.resolved",
+        command: "ls -la",
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null for unknown/info entries", () => {
+    expect(workEntryToolCategory({ tone: "info" })).toBeNull();
+  });
+
+  it("returns null when nothing matches", () => {
+    expect(workEntryToolCategory({})).toBeNull();
   });
 });
 
