@@ -12,6 +12,7 @@ import {
   isTrailingDoubleClick,
   orderItemsByPreferredIds,
   resolveEffectiveRemoteScope,
+  shouldShowRemoteScopeMenu,
   resolveProjectStatusIndicator,
   resolveSidebarNewThreadSeedContext,
   resolveSidebarNewThreadEnvMode,
@@ -54,6 +55,32 @@ describe("resolveEffectiveRemoteScope", () => {
     expect(
       resolveEffectiveRemoteScope({ scope: "env-gone", remoteEnvironmentIds: remoteIds }),
     ).toBe("all");
+  });
+});
+
+describe("shouldShowRemoteScopeMenu", () => {
+  it("shows the menu when more than one remote exists", () => {
+    expect(
+      shouldShowRemoteScopeMenu({ remoteEnvironmentCount: 2, effectiveRemoteScope: "all" }),
+    ).toBe(true);
+  });
+  it("hides the menu with one remote and no active scope", () => {
+    expect(
+      shouldShowRemoteScopeMenu({ remoteEnvironmentCount: 1, effectiveRemoteScope: "all" }),
+    ).toBe(false);
+  });
+  it("keeps the menu when a peer disappears but a scope stays pinned (strand guard)", () => {
+    // Regression guard: scoped to env-a with two remotes, then env-b vanishes so the
+    // count drops to one while the scope remains env-a. The menu must stay so the user
+    // can widen back to "all remotes" instead of being stranded in a filtered view.
+    expect(
+      shouldShowRemoteScopeMenu({ remoteEnvironmentCount: 1, effectiveRemoteScope: "env-a" }),
+    ).toBe(true);
+  });
+  it("hides the menu when no remotes exist", () => {
+    expect(
+      shouldShowRemoteScopeMenu({ remoteEnvironmentCount: 0, effectiveRemoteScope: "all" }),
+    ).toBe(false);
   });
 });
 

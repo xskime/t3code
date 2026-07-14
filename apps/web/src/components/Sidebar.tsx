@@ -203,6 +203,7 @@ import {
   resolveThreadStatusPill,
   orderItemsByPreferredIds,
   shouldClearThreadSelectionOnMouseDown,
+  shouldShowRemoteScopeMenu,
   sortProjectsForSidebar,
   useThreadJumpHintVisibility,
   ThreadStatusPill,
@@ -2992,12 +2993,20 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
               <Toggle
                 aria-label="Remote projects"
                 value="remote"
-                className={cn("w-full gap-1.5", remoteEnvironments.length > 1 && "pr-6")}
+                className={cn(
+                  // Restore the joined right-segment look the ToggleGroup would apply to a
+                  // direct-child toggle; the positioning wrapper otherwise breaks it.
+                  "w-full gap-1.5 rounded-s-none border-s-0 before:-start-[0.5px] before:rounded-s-none",
+                  shouldShowRemoteScopeMenu({
+                    remoteEnvironmentCount: remoteEnvironments.length,
+                    effectiveRemoteScope: remoteScope,
+                  }) && "pr-6",
+                )}
               >
                 {remoteScope === "all" ? (
                   "Remote"
                 ) : (
-                  <span className="truncate font-mono text-xs font-medium">
+                  <span className="truncate font-brand text-xs font-medium">
                     <span className="opacity-40">remote/</span>
                     {remoteEnvironments.find((env) => env.environmentId === remoteScope)?.label ??
                       remoteScope}
@@ -3007,7 +3016,10 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
                   <span className="size-1.5 rounded-full bg-primary" />
                 ) : null}
               </Toggle>
-              {remoteEnvironments.length > 1 ? (
+              {shouldShowRemoteScopeMenu({
+                remoteEnvironmentCount: remoteEnvironments.length,
+                effectiveRemoteScope: remoteScope,
+              }) ? (
                 <Menu>
                   <MenuTrigger
                     aria-label="Choose remote environment scope"

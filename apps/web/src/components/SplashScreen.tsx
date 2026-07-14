@@ -12,7 +12,7 @@ type SplashPhase = "typing" | "mounting" | "resolved";
 
 function StaticMark({ channel }: { channel: string }) {
   return (
-    <span className="whitespace-nowrap font-mono text-xl font-medium text-foreground">
+    <span className="whitespace-nowrap font-brand text-[15px] font-medium text-foreground">
       <span className="opacity-40">{ROOT}</span>
       {APP}
       <span className="opacity-40">/{channel}</span>
@@ -50,9 +50,9 @@ export function SplashScreen() {
         {phase === "resolved" ? (
           <StaticMark channel={channel} />
         ) : (
-          <span className="whitespace-nowrap font-mono text-xl font-medium text-foreground">
+          <span className="whitespace-nowrap font-brand text-[15px] font-medium text-foreground">
             {command.slice(0, typedLength)}
-            <span className="ml-px inline-block h-5 w-2.5 animate-pulse bg-foreground align-text-bottom" />
+            <span className="ml-px inline-block h-4 w-2 animate-pulse bg-foreground align-text-bottom" />
           </span>
         )}
         <span className="h-4 font-mono text-xs text-muted-foreground">

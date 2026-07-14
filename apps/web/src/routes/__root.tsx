@@ -19,6 +19,7 @@ import { RelayClientInstallDialog } from "../components/cloud/RelayClientInstall
 import { SshPasswordPromptDialog } from "../components/desktop/SshPasswordPromptDialog";
 import { ProviderUpdateLaunchNotification } from "../components/ProviderUpdateLaunchNotification";
 import { SlowRpcRequestToastCoordinator } from "../components/SlowRpcRequestToastCoordinator";
+import { SplashScreen } from "../components/SplashScreen";
 import { Button } from "../components/ui/button";
 import {
   AnchoredToastProvider,
@@ -78,6 +79,13 @@ export const Route = createRootRoute({
   },
   component: RootRouteView,
   errorComponent: RootRouteErrorView,
+  // The root route's beforeLoad is the initial app-shell gate (it awaits the primary
+  // server session). Showing SplashScreen while it is pending gives users the typing
+  // mount sequence on startup. pendingMs: 0 makes it appear immediately for the initial
+  // load; because child navigations never re-enter the root route's pending state, this
+  // does not flash on route transitions (unlike a router-wide defaultPendingComponent).
+  pendingComponent: SplashScreen,
+  pendingMs: 0,
   head: () => ({
     meta: [{ name: "title", content: APP_DISPLAY_NAME }],
   }),

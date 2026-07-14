@@ -85,6 +85,18 @@ export function resolveEffectiveRemoteScope(input: {
     : input.scope;
 }
 
+// The Remote scope chevron/menu is shown when there is a choice to make (more than
+// one remote) OR when a non-"all" scope is currently active. The second disjunct
+// matters when a remote disappears while a peer is scoped: the environment count
+// can drop to one while the scope stays pinned, and hiding the menu would strand
+// the Remote tab in a filtered view with no way to widen it back to "all".
+export function shouldShowRemoteScopeMenu(input: {
+  readonly remoteEnvironmentCount: number;
+  readonly effectiveRemoteScope: SidebarRemoteScope;
+}): boolean {
+  return input.remoteEnvironmentCount > 1 || input.effectiveRemoteScope !== "all";
+}
+
 export function createThreadJumpHintVisibilityController(input: {
   delayMs: number;
   onVisibilityChange: (visible: boolean) => void;

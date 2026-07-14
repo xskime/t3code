@@ -41,6 +41,9 @@
     sans-serif;
   --font-mono:
     "SF Mono", "SFMono-Regular", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  /* Brand lockup / splash: JetBrains Mono is pinned first (unlike --font-mono, which
+     terminals depend on and must keep SF Mono leading). Do not fold into --font-mono. */
+  --font-brand: "JetBrains Mono", ui-monospace, monospace;
   --color-warning-foreground: var(--warning-foreground);
   --color-warning: var(--warning);
   --color-success-foreground: var(--success-foreground);
