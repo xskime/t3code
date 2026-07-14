@@ -14,6 +14,7 @@ import {
   setDefaultAdvertisedEndpointKey,
   setProjectExpanded,
   setSidebarEnvironmentTab,
+  setSidebarRemoteScope,
   setThreadChangedFilesExpanded,
   type UiState,
 } from "./uiStateStore";
@@ -23,6 +24,7 @@ function makeUiState(overrides: Partial<UiState> = {}): UiState {
     projectExpandedById: {},
     projectOrder: [],
     sidebarEnvironmentTab: "local",
+    sidebarRemoteScope: "all",
     threadLastVisitedAtById: {},
     threadChangedFilesExpandedById: {},
     defaultAdvertisedEndpointKey: null,
@@ -151,6 +153,15 @@ describe("uiStateStore pure functions", () => {
     expect(setSidebarEnvironmentTab(next, "remote")).toBe(next);
     expect(setSidebarEnvironmentTab(next, "local").sidebarEnvironmentTab).toBe("local");
   });
+
+  it("switches the sidebar remote scope without churning unchanged state", () => {
+    const initial = makeUiState();
+    const next = setSidebarRemoteScope(initial, "env-123");
+
+    expect(next.sidebarRemoteScope).toBe("env-123");
+    expect(setSidebarRemoteScope(next, "env-123")).toBe(next);
+    expect(setSidebarRemoteScope(next, "all").sidebarRemoteScope).toBe("all");
+  });
 });
 
 describe("parsePersistedState", () => {
@@ -180,6 +191,7 @@ describe("parsePersistedState", () => {
       },
       projectOrder: ["physical-b", "physical-a"],
       sidebarEnvironmentTab: "local",
+      sidebarRemoteScope: "all",
       threadLastVisitedAtById: {
         "environment:thread-1": "2026-02-25T12:35:00.000Z",
       },
@@ -200,6 +212,14 @@ describe("parsePersistedState", () => {
       "local",
     );
     expect(parsePersistedState({}).sidebarEnvironmentTab).toBe("local");
+  });
+
+  it("hydrates the sidebar remote scope and falls back to all when missing", () => {
+    expect(parsePersistedState({ sidebarRemoteScope: "env-123" }).sidebarRemoteScope).toBe(
+      "env-123",
+    );
+    expect(parsePersistedState({ sidebarRemoteScope: "" }).sidebarRemoteScope).toBe("all");
+    expect(parsePersistedState({}).sidebarRemoteScope).toBe("all");
   });
 
   it("migrates legacy CWD project preferences into local alias keys", () => {
@@ -285,6 +305,7 @@ describe("uiStateStore persistence", () => {
       },
       defaultAdvertisedEndpointKey: "desktop-core:lan:http",
       sidebarEnvironmentTab: "remote",
+      sidebarRemoteScope: "env-123",
     });
 
     persistState(state);
@@ -298,6 +319,7 @@ describe("uiStateStore persistence", () => {
       },
       projectOrder: ["physical-b", "physical-a"],
       sidebarEnvironmentTab: "remote",
+      sidebarRemoteScope: "env-123",
       threadLastVisitedAtById: {
         "environment:thread-1": "2026-02-25T12:35:00.000Z",
       },

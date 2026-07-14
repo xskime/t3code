@@ -26,14 +26,18 @@ export interface PersistedUiState {
   defaultAdvertisedEndpointKey?: string | null;
   threadChangedFilesExpandedById?: Record<string, Record<string, boolean>>;
   sidebarEnvironmentTab?: string;
+  sidebarRemoteScope?: string;
 }
 
 export type SidebarEnvironmentTab = "local" | "remote";
+
+export type SidebarRemoteScope = "all" | (string & {});
 
 export interface UiProjectState {
   projectExpandedById: Record<string, boolean>;
   projectOrder: string[];
   sidebarEnvironmentTab: SidebarEnvironmentTab;
+  sidebarRemoteScope: SidebarRemoteScope;
 }
 
 export interface UiThreadState {
@@ -51,6 +55,7 @@ const initialState: UiState = {
   projectExpandedById: {},
   projectOrder: [],
   sidebarEnvironmentTab: "local",
+  sidebarRemoteScope: "all",
   threadLastVisitedAtById: {},
   threadChangedFilesExpandedById: {},
   defaultAdvertisedEndpointKey: null,
@@ -129,6 +134,10 @@ export function parsePersistedState(parsed: PersistedUiState): UiState {
     projectExpandedById,
     projectOrder,
     sidebarEnvironmentTab: parsed.sidebarEnvironmentTab === "remote" ? "remote" : "local",
+    sidebarRemoteScope:
+      typeof parsed.sidebarRemoteScope === "string" && parsed.sidebarRemoteScope.length > 0
+        ? parsed.sidebarRemoteScope
+        : "all",
     threadLastVisitedAtById: sanitizeTimestampRecord(parsed.threadLastVisitedAtById),
     threadChangedFilesExpandedById: sanitizePersistedThreadChangedFilesExpanded(
       parsed.threadChangedFilesExpandedById,
@@ -215,6 +224,7 @@ export function persistState(state: UiState): void {
         projectExpandedById,
         projectOrder: state.projectOrder,
         sidebarEnvironmentTab: state.sidebarEnvironmentTab,
+        sidebarRemoteScope: state.sidebarRemoteScope,
         threadLastVisitedAtById: state.threadLastVisitedAtById,
         defaultAdvertisedEndpointKey: state.defaultAdvertisedEndpointKey,
         threadChangedFilesExpandedById,
@@ -351,6 +361,16 @@ export function setSidebarEnvironmentTab(state: UiState, tab: SidebarEnvironment
   };
 }
 
+export function setSidebarRemoteScope(state: UiState, scope: SidebarRemoteScope): UiState {
+  if (state.sidebarRemoteScope === scope) {
+    return state;
+  }
+  return {
+    ...state,
+    sidebarRemoteScope: scope,
+  };
+}
+
 export function resolveProjectExpanded(
   projectExpandedById: Readonly<Record<string, boolean>>,
   preferenceKeys: readonly string[],
@@ -434,6 +454,7 @@ interface UiStateStore extends UiState {
   setThreadChangedFilesExpanded: (threadId: string, turnId: string, expanded: boolean) => void;
   setDefaultAdvertisedEndpointKey: (key: string | null) => void;
   setSidebarEnvironmentTab: (tab: SidebarEnvironmentTab) => void;
+  setSidebarRemoteScope: (scope: SidebarRemoteScope) => void;
   setProjectExpanded: (projectIds: string | readonly string[], expanded: boolean) => void;
   reorderProjects: (
     currentProjectOrder: readonly string[],
@@ -453,6 +474,7 @@ export const useUiStateStore = create<UiStateStore>((set) => ({
   setDefaultAdvertisedEndpointKey: (key) =>
     set((state) => setDefaultAdvertisedEndpointKey(state, key)),
   setSidebarEnvironmentTab: (tab) => set((state) => setSidebarEnvironmentTab(state, tab)),
+  setSidebarRemoteScope: (scope) => set((state) => setSidebarRemoteScope(state, scope)),
   setProjectExpanded: (projectIds, expanded) =>
     set((state) => setProjectExpanded(state, projectIds, expanded)),
   reorderProjects: (currentProjectOrder, draggedProjectIds, targetProjectIds) =>
