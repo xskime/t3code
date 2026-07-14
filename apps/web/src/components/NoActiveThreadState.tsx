@@ -1,3 +1,4 @@
+import { ConstellationBackground } from "./ConstellationBackground";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
 import { SidebarInset } from "./ui/sidebar";
 import { isElectron } from "../env";
@@ -28,8 +29,9 @@ export function NoActiveThreadState() {
           )}
         </header>
 
-        <Empty className="flex-1">
-          <div className="w-full max-w-lg px-8 py-12">
+        <Empty className="relative flex-1 overflow-hidden">
+          <ConstellationBackground />
+          <div className="relative w-full max-w-lg px-8 py-12">
             <EmptyHeader className="max-w-none">
               <EmptyTitle className="text-foreground text-xl">Pick a thread to continue</EmptyTitle>
               <EmptyDescription className="mt-2 text-sm text-muted-foreground/78">

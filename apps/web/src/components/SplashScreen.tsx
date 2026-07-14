@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { ConstellationBackground } from "./ConstellationBackground";
 import { APP_STAGE_LABEL } from "../branding";
 import { resolveAppChannel } from "../branding.logic";
 
@@ -45,8 +46,12 @@ export function SplashScreen() {
   }, [phase]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-3" aria-label="xski code splash screen">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
+      <ConstellationBackground />
+      <div
+        className="relative flex flex-col items-center gap-3"
+        aria-label="xski code splash screen"
+      >
         {phase === "resolved" ? (
           <StaticMark channel={channel} />
         ) : (
