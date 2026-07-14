@@ -21,16 +21,31 @@ const MAX_DEVICE_PIXEL_RATIO = 2;
 const MAX_FRAME_DELTA_SECONDS = 0.05;
 const INITIAL_SHOOTER_SETTLE_MS = 1500;
 const DEFAULT_STAR_RGB = "255, 255, 255";
+const DEFAULT_STAR_CSS = "#fff";
 const SHOOTER_HEAD_RADIUS = 1.4;
 const SHOOTER_LINE_WIDTH = 1.3;
 const SHOOTER_HEAD_ALPHA = 0.9;
 const SHOOTER_TRAIL_ALPHA = 0.85;
 
-/** Parses a canvas's computed `color` ("rgb(r, g, b)" / "rgba(r, g, b, a)") into an "r, g, b" triple. */
+let colorProbeContext: CanvasRenderingContext2D | null = null;
+
+/**
+ * Resolves a canvas's computed `color` into an "r, g, b" triple. The value can arrive in any
+ * CSS color syntax the browser serializes computed `color` to — notably `oklch(...)` under
+ * Tailwind v4, but also `rgb()`/`hsl()`/named — so we let the 2D canvas normalize it rather
+ * than regex a single format. Invalid input leaves the sentinel white fallback in place.
+ */
 function parseStarRgb(color: string): string {
-  const match = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/.exec(color);
-  if (!match) return DEFAULT_STAR_RGB;
-  return `${match[1]}, ${match[2]}, ${match[3]}`;
+  if (!colorProbeContext) {
+    colorProbeContext = document.createElement("canvas").getContext("2d");
+  }
+  if (!colorProbeContext) return DEFAULT_STAR_RGB;
+  colorProbeContext.clearRect(0, 0, 1, 1);
+  colorProbeContext.fillStyle = DEFAULT_STAR_CSS;
+  colorProbeContext.fillStyle = color;
+  colorProbeContext.fillRect(0, 0, 1, 1);
+  const [r, g, b] = colorProbeContext.getImageData(0, 0, 1, 1).data;
+  return `${r}, ${g}, ${b}`;
 }
 
 /**
