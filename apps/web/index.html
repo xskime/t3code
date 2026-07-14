@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#161616" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script>
@@ -74,7 +75,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 96px;
+        width: auto;
         height: 96px;
       }
 
@@ -84,13 +85,22 @@
         object-fit: contain;
       }
     </style>
-    <title>xski code (Alpha)</title>
+    <title>xski code</title>
   </head>
   <body>
     <div id="root">
       <div id="boot-shell">
         <div id="boot-shell-card" aria-label="xski code splash screen">
-          <img id="boot-shell-logo" src="/apple-touch-icon.png" alt="xski code" />
+          <span
+            style="
+              font-family: &quot;JetBrains Mono&quot;, ui-monospace, monospace;
+              font-size: 15px;
+              font-weight: 500;
+              white-space: nowrap;
+            "
+          >
+            <span style="opacity: 0.4">~/x/ski/</span>code
+          </span>
         </div>
       </div>
     </div>
