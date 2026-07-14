@@ -11,6 +11,7 @@ import {
   isContextMenuPointerDown,
   isTrailingDoubleClick,
   orderItemsByPreferredIds,
+  resolveEffectiveRemoteScope,
   resolveProjectStatusIndicator,
   resolveSidebarNewThreadSeedContext,
   resolveSidebarNewThreadEnvMode,
@@ -36,6 +37,25 @@ import {
 } from "../types";
 
 const localEnvironmentId = EnvironmentId.make("environment-local");
+
+describe("resolveEffectiveRemoteScope", () => {
+  const remoteIds = new Set(["env-a", "env-b"]);
+  it("keeps all", () => {
+    expect(resolveEffectiveRemoteScope({ scope: "all", remoteEnvironmentIds: remoteIds })).toBe(
+      "all",
+    );
+  });
+  it("keeps a scope that names a live remote", () => {
+    expect(resolveEffectiveRemoteScope({ scope: "env-a", remoteEnvironmentIds: remoteIds })).toBe(
+      "env-a",
+    );
+  });
+  it("falls back to all when the scoped environment is gone", () => {
+    expect(
+      resolveEffectiveRemoteScope({ scope: "env-gone", remoteEnvironmentIds: remoteIds }),
+    ).toBe("all");
+  });
+});
 
 describe("resolveSidebarStageBadgeLabel", () => {
   it("returns Nightly for nightly primary server versions", () => {

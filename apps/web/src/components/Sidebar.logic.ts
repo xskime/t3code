@@ -10,6 +10,7 @@ import type { SidebarThreadSummary, Thread } from "../types";
 import { cn } from "../lib/utils";
 import { isLatestTurnSettled } from "../session-logic";
 import { resolveServerBackedAppStageLabel } from "../branding.logic";
+import type { SidebarRemoteScope } from "../uiStateStore";
 
 export const THREAD_SELECTION_SAFE_SELECTOR = "[data-thread-item], [data-thread-selection-safe]";
 export const THREAD_JUMP_HINT_SHOW_DELAY_MS = 100;
@@ -70,6 +71,18 @@ export function resolveSidebarStageBadgeLabel(input: {
   fallbackStageLabel: string;
 }): string {
   return resolveServerBackedAppStageLabel(input);
+}
+
+// The persisted remote scope can name an environment that has since
+// disconnected; treat any scope that no longer maps to a live remote as "all"
+// so the Remote tab never silently hides every project.
+export function resolveEffectiveRemoteScope(input: {
+  readonly scope: SidebarRemoteScope;
+  readonly remoteEnvironmentIds: ReadonlySet<string>;
+}): SidebarRemoteScope {
+  return input.scope !== "all" && !input.remoteEnvironmentIds.has(input.scope)
+    ? "all"
+    : input.scope;
 }
 
 export function createThreadJumpHintVisibilityController(input: {

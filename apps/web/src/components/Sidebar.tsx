@@ -1,6 +1,7 @@
 import {
   ArchiveIcon,
   ArrowUpDownIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
   CloudIcon,
   ContainerIcon,
@@ -79,7 +80,7 @@ import { APP_STAGE_LABEL } from "../branding";
 import { resolveAppChannel } from "../branding.logic";
 import { useOpenPrLink } from "../lib/openPullRequestLink";
 import { isTerminalFocused } from "../lib/terminalFocus";
-import { isMacPlatform } from "../lib/utils";
+import { cn, isMacPlatform } from "../lib/utils";
 import {
   readThreadShell,
   useProject,
@@ -98,6 +99,7 @@ import {
   legacyProjectCwdPreferenceKey,
   resolveProjectExpanded,
   type SidebarEnvironmentTab,
+  type SidebarRemoteScope,
   useUiStateStore,
 } from "../uiStateStore";
 import {
@@ -154,6 +156,7 @@ import {
 import { Input } from "./ui/input";
 import {
   Menu,
+  MenuCheckboxItem,
   MenuGroup,
   MenuPopup,
   MenuRadioGroup,
@@ -190,6 +193,7 @@ import { useOpenAddProjectCommandPalette } from "../commandPaletteContext";
 import {
   getSidebarThreadIdsToPrewarm,
   resolveAdjacentThreadId,
+  resolveEffectiveRemoteScope,
   isContextMenuPointerDown,
   isTrailingDoubleClick,
   resolveProjectStatusIndicator,
@@ -2862,6 +2866,9 @@ interface SidebarProjectsContentProps {
   environmentTab: SidebarEnvironmentTab;
   onEnvironmentTabChange: (tab: SidebarEnvironmentTab) => void;
   environmentTabAttention: { local: boolean; remote: boolean };
+  remoteEnvironments: readonly { environmentId: EnvironmentId; label: string }[];
+  remoteScope: SidebarRemoteScope;
+  onRemoteScopeChange: (scope: SidebarRemoteScope) => void;
 }
 
 const SidebarProjectsContent = memo(function SidebarProjectsContent(
@@ -2907,6 +2914,9 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
     environmentTab,
     onEnvironmentTabChange,
     environmentTabAttention,
+    remoteEnvironments,
+    remoteScope,
+    onRemoteScopeChange,
   } = props;
 
   const handleProjectSortOrderChange = useCallback(
@@ -2979,12 +2989,55 @@ const SidebarProjectsContent = memo(function SidebarProjectsContent(
                 <span className="size-1.5 rounded-full bg-primary" />
               ) : null}
             </Toggle>
-            <Toggle aria-label="Remote projects" value="remote" className="flex-1 gap-1.5">
-              Remote
-              {environmentTab !== "remote" && environmentTabAttention.remote ? (
-                <span className="size-1.5 rounded-full bg-primary" />
+            <div className="relative flex-1">
+              <Toggle
+                aria-label="Remote projects"
+                value="remote"
+                className={cn("w-full gap-1.5", remoteEnvironments.length > 1 && "pr-5")}
+              >
+                {remoteScope === "all" ? (
+                  "Remote"
+                ) : (
+                  <span className="truncate font-mono text-xs font-medium">
+                    <span className="opacity-40">remote/</span>
+                    {remoteEnvironments.find((env) => env.environmentId === remoteScope)?.label ??
+                      remoteScope}
+                  </span>
+                )}
+                {environmentTab !== "remote" && environmentTabAttention.remote ? (
+                  <span className="size-1.5 rounded-full bg-primary" />
+                ) : null}
+              </Toggle>
+              {remoteEnvironments.length > 1 ? (
+                <Menu>
+                  <MenuTrigger
+                    aria-label="Choose remote environment scope"
+                    className="absolute inset-y-0 right-0 z-10 flex items-center rounded px-1.5 text-muted-foreground outline-hidden hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <ChevronDownIcon className="size-3" />
+                  </MenuTrigger>
+                  <MenuPopup align="end">
+                    <MenuCheckboxItem
+                      checked={remoteScope === "all"}
+                      onClick={() => onRemoteScopeChange("all")}
+                    >
+                      all remotes
+                    </MenuCheckboxItem>
+                    <MenuSeparator />
+                    {remoteEnvironments.map((environment) => (
+                      <MenuCheckboxItem
+                        key={environment.environmentId}
+                        checked={remoteScope === environment.environmentId}
+                        onClick={() => onRemoteScopeChange(environment.environmentId)}
+                      >
+                        {environment.label}
+                      </MenuCheckboxItem>
+                    ))}
+                  </MenuPopup>
+                </Menu>
               ) : null}
-            </Toggle>
+            </div>
           </ToggleGroup>
         </SidebarGroup>
       ) : null}
@@ -3212,6 +3265,34 @@ export default function Sidebar() {
   const activeEnvironmentTab: SidebarEnvironmentTab = hasRemoteEnvironments
     ? sidebarEnvironmentTab
     : "local";
+  const sidebarRemoteScope = useUiStateStore((store) => store.sidebarRemoteScope);
+  const setSidebarRemoteScope = useUiStateStore((store) => store.setSidebarRemoteScope);
+  const remoteEnvironments = useMemo(
+    () =>
+      environments
+        .filter((environment) => !isLocalEnvironmentId(environment.environmentId))
+        .map((environment) => ({
+          environmentId: environment.environmentId,
+          label: environment.label.toLowerCase(),
+        }))
+        .sort((left, right) => left.label.localeCompare(right.label)),
+    [environments, isLocalEnvironmentId],
+  );
+  const remoteEnvironmentIds = useMemo(
+    () => new Set(remoteEnvironments.map((environment) => environment.environmentId)),
+    [remoteEnvironments],
+  );
+  const remoteScope = resolveEffectiveRemoteScope({
+    scope: sidebarRemoteScope,
+    remoteEnvironmentIds,
+  });
+  // Only the Remote tab honours the scope; the Local tab always shows every
+  // local project. `remoteScope === "all"` means no narrowing.
+  const matchesRemoteScope = useCallback(
+    (environmentId: EnvironmentId) =>
+      activeEnvironmentTab !== "remote" || remoteScope === "all" || environmentId === remoteScope,
+    [activeEnvironmentTab, remoteScope],
+  );
   const orderedProjects = useMemo(() => {
     return orderItemsByPreferredIds({
       items: projects,
@@ -3232,20 +3313,34 @@ export default function Sidebar() {
       hasRemoteEnvironments
         ? orderedProjects.filter(
             (project) =>
-              isLocalEnvironmentId(project.environmentId) === (activeEnvironmentTab === "local"),
+              isLocalEnvironmentId(project.environmentId) === (activeEnvironmentTab === "local") &&
+              matchesRemoteScope(project.environmentId),
           )
         : orderedProjects,
-    [orderedProjects, hasRemoteEnvironments, activeEnvironmentTab, isLocalEnvironmentId],
+    [
+      orderedProjects,
+      hasRemoteEnvironments,
+      activeEnvironmentTab,
+      isLocalEnvironmentId,
+      matchesRemoteScope,
+    ],
   );
   const tabThreads = useMemo(
     () =>
       hasRemoteEnvironments
         ? sidebarThreads.filter(
             (thread) =>
-              isLocalEnvironmentId(thread.environmentId) === (activeEnvironmentTab === "local"),
+              isLocalEnvironmentId(thread.environmentId) === (activeEnvironmentTab === "local") &&
+              matchesRemoteScope(thread.environmentId),
           )
         : sidebarThreads,
-    [sidebarThreads, hasRemoteEnvironments, activeEnvironmentTab, isLocalEnvironmentId],
+    [
+      sidebarThreads,
+      hasRemoteEnvironments,
+      activeEnvironmentTab,
+      isLocalEnvironmentId,
+      matchesRemoteScope,
+    ],
   );
   const tabAttention = useMemo(() => {
     if (!hasRemoteEnvironments) {
@@ -3875,6 +3970,9 @@ export default function Sidebar() {
             environmentTab={activeEnvironmentTab}
             onEnvironmentTabChange={setSidebarEnvironmentTab}
             environmentTabAttention={tabAttention}
+            remoteEnvironments={remoteEnvironments}
+            remoteScope={remoteScope}
+            onRemoteScopeChange={setSidebarRemoteScope}
           />
 
           <SidebarSeparator />
